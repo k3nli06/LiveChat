@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat WebSocket</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+    }
+    #messages {
+      list-style: none;
+      padding: 0;
+      border: 1px solid #ccc;
+      height: 300px;
+      overflow-y: scroll;
+      margin-bottom: 10px;
+    }
+    #messages li {
+      margin: 5px 0;
+      padding: 4px 8px;
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    #controls {
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Chat WebSocket</h2>
+
+<p id="userDisplay"><strong>Usuario:</strong> (cargando...)</p>
+
+<div>
+  <label>Sala ID:</label>
+  <input type="text" id="room" placeholder="Ej: general" />
+  <button onclick="connectToRoom()">Entrar</button>
+</div>
+
+<ul id="messages"></ul>
+
+<div id="controls">
+  <input type="text" id="message" placeholder="Escribe un mensaje..." style="flex: 1;" />
+  <button onclick="sendMessage()">Enviar</button>
+</div>
+
+<script>
+  let stompClient;
+  let roomId;
+  let username = null;
+
+  // Obtener nombre del usuario autenticado
+  fetch('/users/me', { credentials: 'include' })
+    .then(response => {
+      if (!response.ok) throw new Error("No autenticado");
+      return response.json();
+    })
+    .then(data => {
+      username = data.username;
+      document.getElementById("userDisplay").innerHTML = `<strong>Usuario:</strong> ${username}`;
+    })
+    .catch(err => {
+      console.error("No autenticado:", err);
+      document.getElementById("userDisplay").textContent = "⚠️ No autenticado";
+    });
+
+  function appendMessage(msg) {
+    const li = document.createElement("li");
+    const time = new Date(msg.timestamp).toLocaleTimeString();
+    li.textContent = `[${time}] ${msg.sender}: ${msg.content}`;
+    document.getElementById("messages").appendChild(li);
+    li.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function connectToRoom() {
+    roomId = document.getElementById("room").value.trim();
+    if (!roomId || !username) {
+      alert("Debe ingresar un ID de sala y estar autenticado.");
+      return;
+    }
+
+    const socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+    stompClient.debug = console.log;
+
+    stompClient.connect({}, function () {
+      console.log("🟢 Conectado con STOMP");
+
+      // ✅ Suscripción privada para recibir historial
+      stompClient.subscribe(`/topic/private/${username}`, function (message) {
+        const history = JSON.parse(message.body);
+        if (Array.isArray(history)) {
+          history.forEach(appendMessage);
+        } else {
+          appendMessage(history);
+        }
+      });
+
+      // ✅ Canal público de la sala para mensajes en vivo
+      stompClient.subscribe(`/topic/chat/${roomId}`, function (message) {
+        const msg = JSON.parse(message.body);
+        appendMessage(msg);
+      });
+
+      // 📡 Solicitar historial al backend
+      stompClient.send(`/app/chat/${roomId}/join`, {}, JSON.stringify({
+        sender: username,
+        type: "JOIN"
+      }));
+    }, function (error) {
+      console.error("❌ STOMP error:", error);
+    });
+  }
+
+  function sendMessage() {
+    const content = document.getElementById("message").value.trim();
+    if (content && stompClient && stompClient.connected && username) {
+      stompClient.send(`/app/chat/${roomId}/sendMessage`, {}, JSON.stringify({
+        sender: username,
+        content: content,
+        type: "CHAT",
+        timestamp: new Date().toISOString()
+      }));
+      document.getElementById("message").value = '';
+    }
+  }
+</script>
+
+</body>
+</html>
