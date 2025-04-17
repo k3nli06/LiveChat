@@ -28,13 +28,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .formLogin(Customizer.withDefaults())
-                .httpBasic(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> {
-                    authorize.requestMatchers("/users/**").permitAll();
-                    authorize.requestMatchers("/", "/index.html", "/js/**", "/css/**", "/images/**", "/ws/**").permitAll();
+                    authorize.requestMatchers("/", "/users**", "/index.html", "/js/**", "/css/**", "/ws/**")
+                            .permitAll();
+                    authorize.requestMatchers("/users/me").authenticated();
                     authorize.anyRequest().authenticated();
                 })
+                .httpBasic(Customizer.withDefaults())
+                .formLogin(Customizer.withDefaults())
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID"))
                 .build();
     }
 

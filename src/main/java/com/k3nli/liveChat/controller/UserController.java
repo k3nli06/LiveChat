@@ -32,7 +32,7 @@ public class UserController {
 
     @GetMapping("/me")
     public Map<String, String> getLoggedUser(Principal principal) {
-        return Map.of("username", principal.getName());
+        return Map.of("username", principal != null ? principal.getName() : null);
     }
 
     @GetMapping("/{id}")

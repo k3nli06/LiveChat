@@ -1,5 +1,6 @@
 package com.k3nli.liveChat.controller;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class ChatController {
     MessageService messageService;
 
     @Autowired
-    SimpMessagingTemplate messagingTemplate;
+    SimpMessagingTemplate messagingTemplate;    
 
     @MessageMapping("/chat/{roomId}/sendMessage")
     @SendTo("/topic/chat/{roomId}")
@@ -30,15 +31,6 @@ public class ChatController {
         message.setTimestamp(time);
         messageService.persistChatMessages(roomId, message);
         return message;
-    }
-
-    @MessageMapping("/chat/{roomId}/join")
-    public void joinToChat(@DestinationVariable String roomId, @Payload ChatMessageDto message) {
-
-        List<ChatMessageDto> history = messageService.getHistoryMessages(roomId);
-        String username = message.getSender();
-
-        messagingTemplate.convertAndSend("/topic/private/" + username, history);
     }
 
 }
