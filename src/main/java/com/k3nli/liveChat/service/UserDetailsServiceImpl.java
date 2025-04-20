@@ -6,7 +6,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.k3nli.liveChat.persistence.entity.User;
+import com.k3nli.liveChat.persistence.entity.UserEntity;
 import com.k3nli.liveChat.persistence.repository.UserRepository;
 
 @Service
@@ -17,7 +17,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = repository.findUserByName(username)
+        UserEntity user = repository.findUserByName(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User " + username + "not found"));
 
         return user;

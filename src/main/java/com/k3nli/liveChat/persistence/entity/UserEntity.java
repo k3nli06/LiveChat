@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document("usuarios")
-public class User implements UserDetails{
+public class UserEntity implements UserDetails{
     @Id private String id;
 
     private String name;
