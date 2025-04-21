@@ -1,6 +1,24 @@
-version: '3'
+
 services:
   mongodb:
     image: mongodb/mongodb-community-server
     ports:
       - 27017:27017
+  backend:
+    build: .
+    environment:
+      - JWT_SECRET_KEY=f9612ee6cbd06827ff8e43b5cd1fd7ab888b420c71b9ee8f20f96205b35aac6b6984a6bb66d0cae7194a2ac434a68952d4f2ce4ba06ab9ad77ac416ae43545ec
+      - ALLOWED_ORIGIN=http://localhost:3000
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_DATABASE=LiveChat
+    ports:
+      - 8080:8080
+    depends_on:
+      - mongodb
+  frontend:
+    build: /FrontEnd/
+    ports:
+      - 3000:80
+    depends_on:
+      - backend
